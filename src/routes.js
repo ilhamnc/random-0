@@ -1,6 +1,9 @@
 const {
     addUsersHandler,
     getUserHandler,
+    loginHandler,
+    refreshTokenHandler,
+    // logoutHandler,
 } = require('./handler');
 
 const routes = [
@@ -14,6 +17,21 @@ const routes = [
         path: '/user/{userId}',
         handler: getUserHandler,
     },
+    {
+        method: 'POST',
+        path: '/auth',
+        handler: loginHandler,
+    },
+    {
+        method: 'PUT',
+        path: '/auth',
+        handler: refreshTokenHandler,
+    },
+    // {
+    //     method: 'DELETE',
+    //     path: '/auth',
+    //     handler: logoutHandler,
+    // },
 ];
 
 module.exports = routes;

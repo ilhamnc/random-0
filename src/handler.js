@@ -1,6 +1,7 @@
 const {nanoid} = require('nanoid');
 const users = require('./users');
 const Joi = require('joi');
+const jwt = require('jsonwebtoken');
 
 const addUsersHandler = (request, h) => {
     const { username, email, password, confirmPassword } = request.payload;
@@ -79,7 +80,100 @@ const getUserHandler = (request, h) => {
     return response;
 };
 
+const loginHandler = (request, h) => {
+    const { username, password } = request.payload;
+
+    // Schema validasi untuk login
+    const loginSchema = Joi.object({
+        username: Joi.string().required(),
+        password: Joi.string().required()
+    });
+
+    const { error } = loginSchema.validate({ username, password });
+
+    if (error) {
+        const response = h.response({
+            status: 'fail',
+            message: 'Data login tidak valid',
+            loginResult: null
+        });
+        response.code(401);
+        return response;
+    }
+
+    const user = users.find(user => user.username === username && user.password === password);
+
+    if (!user) {
+        const response = h.response({
+            status: 'fail',
+            message: 'Username atau password salah',
+            loginResult: null
+        });
+        response.code(404);
+        return response;
+    }
+  
+    // Jika verifikasi sukses, buat token JWT
+    const token = jwt.sign({ userId: user.id, name: user.username }, 'sehatinaja', { expiresIn: '1h' });
+
+    const response = h.response({
+        status: 'success',
+        message: 'Login success',
+        loginResult: {
+            userId: user.id,
+            username: user.username,
+            token: token
+          }
+    });
+    response.code(200);
+    return response;
+};
+const refreshTokenHandler =(request, h) =>  {
+    const { token } = request.payload;
+
+    // Verifikasi token JWT
+    try {
+        const decoded = jwt.verify(token, 'sehatinaja');
+        const { userId, username } = decoded;
+
+        // Buat token baru dengan waktu kadaluarsa yang sama
+        const newToken = jwt.sign({ userId, username }, 'sehatinaja', { expiresIn: '1h' });
+
+        const response = h.response({
+            status: 'success',
+            message: 'Token berhasil diperbarui',
+            loginResult: {
+                userId: userId,
+                username: username,
+                token: newToken
+            }
+        });
+        response.code(200);
+        return response;
+    } catch (error) {
+        const response = h.response({
+          status: "fail",
+          message: 'Token tidak valid',
+          loginResult: null
+        });
+        response.code(400);
+        return response;
+    }
+
+};
+
+// const logoutHandler =(request, h) => {
+//     const { token } = request.payload;
+
+//     const decoded = jwt.verify(token, 'sehatinaja');
+//     token.
+
+// };
+
 module.exports = {
     addUsersHandler,
     getUserHandler,
+    loginHandler,
+    refreshTokenHandler,
+    // logoutHandler,
 };
